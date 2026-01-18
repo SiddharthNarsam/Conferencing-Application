@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Chat - WebRTC</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
         * {
             margin: 0;
             padding: 0;
@@ -12,82 +14,176 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1a2a4e 50%, #2d1b69 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            animation: float 15s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, -30px); }
         }
 
         .container {
             width: 100%;
-            max-width: 1200px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1300px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             color: white;
-            padding: 24px;
+            padding: 32px 24px;
             text-align: center;
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         }
 
         .header h1 {
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
         }
 
         .status-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 13px;
             font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
 
-        .status-badge.connecting {
-            background: rgba(255, 193, 7, 0.3);
-            color: #ffc107;
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #fbbf24;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .status-badge.connected {
-            background: rgba(76, 175, 80, 0.3);
-            color: #4caf50;
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.3);
+            color: #86efac;
+        }
+
+        .status-badge.connected .status-dot {
+            background: #22c55e;
+            animation: none;
         }
 
         .videos-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            padding: 24px;
+            gap: 28px;
+            padding: 28px;
             flex: 1;
             align-items: center;
             justify-items: center;
+            min-height: 600px;
         }
 
-        .video-wrapper {
+        .video-card {
             position: relative;
             width: 100%;
             height: 100%;
-            max-height: 500px;
-            background: #000;
-            border-radius: 12px;
+            max-height: 520px;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: #000;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeIn 0.6s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05);
         }
 
         video {
@@ -99,32 +195,61 @@
 
         .video-label {
             position: absolute;
-            top: 12px;
-            left: 12px;
-            background: rgba(0, 0, 0, 0.6);
+            top: 16px;
+            left: 16px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%);
             color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 10px 18px;
+            border-radius: 10px;
             font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
             z-index: 10;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .no-video {
-            color: #999;
+            color: rgba(255, 255, 255, 0.5);
             text-align: center;
-            font-size: 14px;
+            font-size: 15px;
+            position: absolute;
+            animation: fadeInText 0.8s ease-out;
+        }
+
+        @keyframes fadeInText {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
 
         .footer {
-            background: #f5f5f5;
-            padding: 16px 24px;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px 24px;
             text-align: center;
-            border-top: 1px solid #e0e0e0;
-            font-size: 12px;
-            color: #666;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(5px);
+        }
+
+        .footer::before {
+            content: '🔒 ';
+        }
+
+        @media (max-width: 1024px) {
+            .videos-container {
+                gap: 20px;
+                min-height: 500px;
+            }
+
+            .video-card {
+                max-height: 450px;
+            }
         }
 
         @media (max-width: 768px) {
@@ -132,28 +257,33 @@
                 grid-template-columns: 1fr;
                 gap: 16px;
                 padding: 16px;
+                min-height: auto;
             }
 
             .header h1 {
-                font-size: 22px;
+                font-size: 24px;
             }
 
-            .video-wrapper {
-                max-height: 400px;
+            .header {
+                padding: 24px 16px;
+            }
+
+            .video-card {
+                max-height: 380px;
             }
         }
 
         @media (max-width: 480px) {
             .container {
-                border-radius: 8px;
+                border-radius: 16px;
             }
 
             .header {
-                padding: 16px;
+                padding: 20px 16px;
             }
 
             .header h1 {
-                font-size: 18px;
+                font-size: 20px;
             }
 
             .videos-container {
@@ -161,8 +291,13 @@
                 gap: 12px;
             }
 
-            .video-wrapper {
+            .video-card {
                 max-height: 300px;
+            }
+
+            .status-badge {
+                font-size: 11px;
+                padding: 6px 12px;
             }
         }
     </style>
@@ -171,24 +306,27 @@
 
 <div class="container">
     <div class="header">
-        <h1>🎥 Video Chat</h1>
-        <div class="status-badge connecting" id="status">🔄 Connecting...</div>
+        <h1>✨ Video Connect</h1>
+        <div class="status-badge connecting" id="status">
+            <span class="status-dot"></span>
+            <span>Establishing Connection</span>
+        </div>
     </div>
 
     <div class="videos-container">
-        <div class="video-wrapper">
-            <span class="video-label">Your Camera</span>
+        <div class="video-card">
+            <span class="video-label">👤 Your Camera</span>
             <video id="localVideo" autoplay muted playsinline></video>
         </div>
-        <div class="video-wrapper">
-            <span class="video-label">Remote User</span>
+        <div class="video-card">
+            <span class="video-label">👥 Remote User</span>
             <video id="remoteVideo" autoplay playsinline></video>
-            <div class="no-video" id="remoteNoVideo" style="position: absolute;">Waiting for connection...</div>
+            <div class="no-video" id="remoteNoVideo">⏳ Waiting for connection...</div>
         </div>
     </div>
 
     <div class="footer">
-        ✓ P2P WebRTC Connection | Encrypted & Private
+        P2P WebRTC Connection | End-to-End Encrypted & Private
     </div>
 </div>
 
@@ -200,19 +338,28 @@ const remoteVideo = document.getElementById("remoteVideo");
 const statusBadge = document.getElementById("status");
 const remoteNoVideo = document.getElementById("remoteNoVideo");
 
-function updateStatus(text, className) {
-    statusBadge.textContent = text;
-    statusBadge.className = `status-badge ${className}`;
+function updateStatus(text, isConnected = false) {
+    statusBadge.innerHTML = `
+        <span class="status-dot"></span>
+        <span>${text}</span>
+    `;
+    if (isConnected) {
+        statusBadge.classList.add("connected");
+        statusBadge.classList.remove("connecting");
+    } else {
+        statusBadge.classList.remove("connected");
+        statusBadge.classList.add("connecting");
+    }
 }
 
 try {
     // 1️⃣ Get camera
-    updateStatus("📹 Requesting camera access...", "connecting");
+    updateStatus("Requesting camera access...");
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     localVideo.srcObject = stream;
 
-    // 2️⃣ Create WebSocket (ws / wss auto)
-    updateStatus("🔄 Connecting to server...", "connecting");
+    // 2️⃣ Create WebSocket
+    updateStatus("Connecting to server...");
     const wsProtocol = location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`${wsProtocol}://${location.host}/ws`);
 
@@ -228,7 +375,7 @@ try {
     pc.ontrack = event => {
         remoteVideo.srcObject = event.streams[0];
         remoteNoVideo.style.display = "none";
-        updateStatus("✅ Connected", "connected");
+        updateStatus("Connection established", true);
     };
 
     // 6️⃣ Send ICE candidates
@@ -246,7 +393,7 @@ try {
         const msg = JSON.parse(event.data);
 
         if (msg.type === "offer") {
-            updateStatus("📞 Incoming call...", "connecting");
+            updateStatus("Receiving call...");
             await pc.setRemoteDescription(msg.offer);
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
@@ -263,16 +410,16 @@ try {
     };
 
     ws.onerror = () => {
-        updateStatus("❌ Connection Error", "connecting");
+        updateStatus("Connection error");
     };
 
     ws.onclose = () => {
-        updateStatus("⚠️ Disconnected", "connecting");
+        updateStatus("Disconnected");
     };
 
     // 8️⃣ First user creates offer
     ws.onopen = async () => {
-        updateStatus("🔄 Establishing connection...", "connecting");
+        updateStatus("Establishing connection...");
         if (pc.signalingState === "stable") {
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
@@ -282,8 +429,8 @@ try {
 
 } catch (error) {
     console.error("Error:", error);
-    updateStatus("❌ Error: " + error.message, "connecting");
-    alert("Error: " + error.message + "\n\nMake sure to allow camera and microphone access.");
+    updateStatus("Error: " + error.message);
+    alert("Error: " + error.message + "\n\nPlease allow camera and microphone access.");
 }
 
 })();
