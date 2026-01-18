@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FastAPI WebRTC 1-to-1</title>
+    <style>
+        video {
+            width: 45%;
+            border: 2px solid black;
+        }
+    </style>
+</head>
+<body>
+
+<h2>WebRTC 1-to-1 Demo</h2>
+
+<video id="localVideo" autoplay muted playsinline></video>
+<video id="remoteVideo" autoplay playsinline></video>
+
+<script>
+(async () => {
+
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+
+// 1️⃣ Get camera
+const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+localVideo.srcObject = stream;
+
+// 2️⃣ Create WebSocket (ws / wss auto)
+const wsProtocol = location.protocol === "https:" ? "wss" : "ws";
+const ws = new WebSocket(`${wsProtocol}://${location.host}/ws`);
+
+// 3️⃣ Create PeerConnection
+const pc = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+});
+
+// 4️⃣ Add local tracks
+stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+// 5️⃣ Receive remote track
+pc.ontrack = event => {
+    remoteVideo.srcObject = event.streams[0];
+};
+
+// 6️⃣ Send ICE candidates
+pc.onicecandidate = event => {
+    if (event.candidate) {
+        ws.send(JSON.stringify({
+            type: "candidate",
+            candidate: event.candidate
+        }));
+    }
+};
+
+// 7️⃣ WebSocket messages
+ws.onmessage = async event => {
+    const msg = JSON.parse(event.data);
+
+    if (msg.type === "offer") {
+        await pc.setRemoteDescription(msg.offer);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        ws.send(JSON.stringify({ type: "answer", answer }));
+    }
+
+    if (msg.type === "answer") {
+        await pc.setRemoteDescription(msg.answer);
+    }
+
+    if (msg.type === "candidate") {
+        await pc.addIceCandidate(msg.candidate);
+    }
+};
+
+// 8️⃣ First user creates offer
+ws.onopen = async () => {
+    if (pc.signalingState === "stable") {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        ws.send(JSON.stringify({ type: "offer", offer }));
+    }
+};
+
+})();
+</script>
+
+</body>
+</html>
